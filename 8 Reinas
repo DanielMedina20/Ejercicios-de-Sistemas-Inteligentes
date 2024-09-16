@@ -1,0 +1,115 @@
+class Casilla:
+    def __init__(self):
+        self.afectado = 0  # Indica el número de amenazas en la casilla (0 si no está bajo ataque)
+        self.reina = False  # Indica si hay una reina en la casilla
+
+    def setAfectado(self, estado):
+        # Incrementa o decrementa el contador de amenazas dependiendo del estado (True para marcar, False para desmarcar)
+        if estado:
+            self.afectado += 1
+        else:
+            self.afectado -= 1
+
+    def getAfectado(self):
+        return self.afectado > 0
+
+    def setReina(self, reina):
+        self.reina = reina
+
+    def getReina(self):
+        return self.reina
+
+# Inicialización del tablero de 8x8: Se crea un tablero de 8x8 utilizando una lista de listas, 
+# donde cada elemento es una instancia de la clase Casilla.
+tablero = [[Casilla() for _ in range(8)] for _ in range(8)]
+
+# Función para reiniciar el tablero: Reinicia el tablero creando nuevas 
+# instancias de Casilla para cada casilla.
+def reinicializacionTablero():
+    global tablero
+    for i in range(8):
+        for j in range(8):
+            tablero[i][j] = Casilla()
+
+# Función para marcar/desmarcar las casillas afectadas por una reina
+def marcarAtaques(row, col, estado):
+    # Marcar filas y columnas
+    for i in range(8):
+        tablero[row][i].setAfectado(estado)  # Horizontal
+        tablero[i][col].setAfectado(estado)  # Vertical
+
+    # Marcar diagonales hacia arriba a la izquierda
+    i, j = row, col
+    while i >= 0 and j >= 0:
+        tablero[i][j].setAfectado(estado)
+        i -= 1
+        j -= 1
+
+    # Marcar diagonales hacia arriba a la derecha
+    i, j = row, col
+    while i >= 0 and j < 8:
+        tablero[i][j].setAfectado(estado)
+        i -= 1
+        j += 1
+
+    # Marcar diagonales hacia abajo a la izquierda
+    i, j = row, col
+    while i < 8 and j >= 0:
+        tablero[i][j].setAfectado(estado)
+        i += 1
+        j -= 1
+
+    # Marcar diagonales hacia abajo a la derecha
+    i, j = row, col
+    while i < 8 and j < 8:
+        tablero[i][j].setAfectado(estado)
+        i += 1
+        j += 1
+
+# Función para verificar si es seguro colocar una reina en una casilla
+def esSeguro(row, col):
+    return not tablero[row][col].getAfectado()
+
+# Algoritmo de backtracking para colocar reinas
+def colocarReinas(fila):
+    if fila == 8:  # Si hemos colocado 8 reinas, hemos encontrado una solución
+        return True
+
+    for columna in range(8):
+        if esSeguro(fila, columna):
+            # Colocamos la reina en la casilla actual
+            tablero[fila][columna].setReina(True)
+            marcarAtaques(fila, columna, True)
+
+            # Intentamos colocar la siguiente reina
+            if colocarReinas(fila + 1):
+                return True
+
+            # Si no es posible colocar la siguiente reina, retiramos la reina actual (backtracking)
+            tablero[fila][columna].setReina(False)
+            marcarAtaques(fila, columna, False)
+
+    return False  # Si no podemos colocar una reina en esta fila, retrocedemos
+
+# Función para imprimir la solución
+def imprimiendoSolucion():
+    print("SOLUCIÓN:")
+    for i in range(8):
+        for j in range(8):
+            if tablero[i][j].getReina():
+                print(" [R] ", end="")
+            else:
+                print(" [ ] ", end="")
+        print("\n")
+
+# Función principal para resolver el problema
+def resolver8Reinas():
+    reinicializacionTablero()
+    if colocarReinas(0):
+        imprimiendoSolucion()
+    else:
+        print("No se encontró solución.")
+
+# Ejecución del programa
+if __name__ == "__main__":
+    resolver8Reinas()
