@@ -1,0 +1,37 @@
+def karatsuba(x: int, y: int) -> int:
+#Si (x) es menor que 10, se considera que es un número de un solo dígito. 
+# En este caso, simplemente se retorna el producto (x \times y). 
+# Este es el caso base para la recursión.
+    if x < 10:
+        return x * y
+#Si (x) es mayor que (y), se intercambian los valores para asegurarse de que (x \leq y). 
+# Esto no es estrictamente necesario para el funcionamiento del algoritmo, 
+# ero puede ser una optimización para manejar mejor los casos de entrada.
+    else:
+        if x > y:
+            x, y = y, x
+
+#Calcula (m), que es la mitad del número de dígitos de (x). 
+# Esto determina el punto en el que se dividirán los números en partes más pequeñas.
+        m = len(str(x))//2
+#Divide (x) y (y) en dos partes utilizando el valor de (m):
+#(x = x1 \times 10^m + x0)
+#(y = y1 \times 10^m + y0)
+        x1, x0 = divmod(x, 10**m)
+        y1, y0 = divmod(y, 10**m)
+
+#Calcula (r = x1 \times y1) utilizando la multiplicación de Karatsuba de forma recursiva.
+#Calcula (s = x0 \times y0) utilizando la multiplicación de Karatsuba de forma recursiva.
+
+        r = karatsuba(x1, y1)
+        s = karatsuba(x0, y0)
+#Calcula (t): Este es el término cruzado que se obtiene de la recursión en 
+# ((x1 + x0) \times (y1 + y0)). Luego, se resta (r) y (s) para obtener 
+# el término cruzado, ya que (r) y (s) están incluidos en esta multiplicación
+        t = karatsuba(x1+x0, y1+y0) - r - s
+
+#Finalmente, se combinan los resultados para obtener el producto final:
+#(r \times 10^{2m}): Desplaza (r) dos veces a la izquierda.
+#(t \times 10^m): Desplaza (t) una vez a la izquierda.
+#(s): Se suma tal cual
+        return r*10**2*m + t*10**m + s
