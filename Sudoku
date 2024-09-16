@@ -1,0 +1,156 @@
+import numpy as np
+import random
+import math
+
+# Función para contar los errores en un tablero de Sudoku
+def calcular_errores(sudoku):
+    errores = 0
+
+    # Verificar errores en las columnas
+    for col in range(9):
+        columna = [sudoku[fila][col] for fila in range(9)]
+        errores += len(columna) - len(set(columna))
+
+    # Verificar errores en los bloques 3x3
+    for fila in range(0, 9, 3):
+        for col in range(0, 9, 3):
+            bloque = [sudoku[r][c] for r in range(fila, fila + 3) for c in range(col, col + 3)]
+            errores += len(bloque) - len(set(bloque))
+
+    return errores
+
+# Función para generar un tablero vecino
+def crear_vecino(sudoku, celdas_fijas):
+    tablero_modificado = [fila[:] for fila in sudoku]
+
+    fila = random.choice(range(9))
+    while fila in celdas_fijas:
+        fila = random.choice(range(9))
+
+    col1, col2 = random.sample(range(9), 2)
+    tablero_modificado[fila][col1], tablero_modificado[fila][col2] = tablero_modificado[fila][col2], tablero_modificado[fila][col1]
+
+    return tablero_modificado
+
+# Algoritmo de enfriamiento simulado para Sudoku
+def enfriamiento_simulado_sudoku(sudoku_inicial, iteraciones_max=2500):
+    celdas_fijas = [(i, j) for i in range(9) for j in range(9) if sudoku_inicial[i][j] != 0]
+
+    # Llenar las celdas vacías en cada fila de manera aleatoria
+    tablero_actual = []
+    for fila in range(9):
+        valores_fila = [valor for valor in sudoku_inicial[fila] if valor != 0]
+        faltantes = [num for num in range(1, 10) if num not in valores_fila]
+        random.shuffle(faltantes)
+        tablero_actual.append([sudoku_inicial[fila][col] if sudoku_inicial[fila][col] != 0 else faltantes.pop() for col in range(9)])
+
+    errores_actuales = calcular_errores(tablero_actual)
+    temp = 1.0
+    tasa_reduccion = 0.98
+    temp_min = 1e-6
+
+    paso = 0
+    registro_errores = []
+    configuraciones_con_5_errores = []
+
+    while paso < iteraciones_max:
+        nuevo_tablero = crear_vecino(tablero_actual, celdas_fijas)
+        nuevos_errores = calcular_errores(nuevo_tablero)
+
+        if nuevos_errores < errores_actuales:
+            tablero_actual = nuevo_tablero
+            errores_actuales = nuevos_errores
+            temp *= tasa_reduccion
+
+        if errores_actuales == 5:
+            configuraciones_con_5_errores.append(np.array(tablero_actual))
+
+        if errores_actuales == 0:
+            break
+
+        registro_errores.append(errores_actuales)
+        paso += 1
+
+    promedio_errores = sum(registro_errores) / len(registro_errores)
+
+    return tablero_actual, errores_actuales, paso, promedio_errores, configuraciones_con_5_errores
+
+# Función para hacer cruce entre dos tableros
+def mezclar_tableros(sudoku1, sudoku2):
+    nuevo_tablero = []
+    for i in range(9):
+        if random.random() > 0.5:
+            nuevo_tablero.append(sudoku1[i])
+        else:
+            nuevo_tablero.append(sudoku2[i])
+    return np.array(nuevo_tablero)
+
+# Función para aplicar mutaciones a un tablero
+def aplicar_mutacion(sudoku, prob_mutacion=0.1):
+    tablero_mutado = sudoku.copy()
+    for fila in range(9):
+        if random.random() < prob_mutacion:
+            col1, col2 = random.sample(range(9), 2)
+            tablero_mutado[fila][col1], tablero_mutado[fila][col2] = tablero_mutado[fila][col2], tablero_mutado[fila][col1]
+    return tablero_mutado
+
+# Algoritmo genético para mejorar los tableros de Sudoku
+def optimizar_por_genetica(poblacion_inicial, num_generaciones=500, prob_mutacion=0.1):
+    poblacion = poblacion_inicial.copy()
+
+    for generacion in range(num_generaciones):
+        nueva_gen = []
+
+        # Generar nueva población con cruce y mutación
+        while len(nueva_gen) < len(poblacion):
+            padres = random.sample(poblacion, 2)
+            descendiente = mezclar_tableros(padres[0], padres[1])
+            descendiente = aplicar_mutacion(descendiente, prob_mutacion)
+            nueva_gen.append(descendiente)
+
+        # Seleccionar los mejores tableros
+        poblacion.extend(nueva_gen)
+        poblacion.sort(key=calcular_errores)
+        poblacion = poblacion[:len(poblacion_inicial)]
+
+        # Progreso
+        mejor_error = calcular_errores(poblacion[0])
+        print(f"Generación {generacion+1}: Mejor tablero tiene {mejor_error} errores")
+
+        if mejor_error == 0:
+            print("Solución óptima encontrada con 0 errores.")
+            return poblacion[0]
+
+    return poblacion[0]
+
+# Tablero inicial de Sudoku con 15 elementos predefinidos
+sudoku_inicial = [
+    [5, 0, 0, 0, 7, 0, 0, 0, 0],
+    [0, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 0, 8, 0, 0, 0, 0, 6, 0],
+    [8, 0, 0, 0, 6, 0, 0, 0, 0],
+    [4, 0, 0, 8, 0, 3, 0, 0, 0],
+    [0, 0, 0, 0, 2, 0, 0, 0, 6],
+    [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    [0, 0, 0, 0, 8, 0, 0, 7, 9]
+]
+
+# Ejecutar enfriamiento simulado
+solucion, errores, iteraciones, prom_errores, config_5_errores = enfriamiento_simulado_sudoku(sudoku_inicial)
+
+# Resultados del enfriamiento simulado
+print("Errores finales:", errores)
+print("Número de iteraciones:", iteraciones)
+print("Promedio de errores:", prom_errores)
+print("Configuraciones con 5 errores:", len(config_5_errores))
+print(np.array(solucion))
+
+# Ejecutar algoritmo genético si hay configuraciones con 5 errores
+if config_5_errores:
+    mejor_solucion = optimizar_por_genetica(config_5_errores)
+    print("Mejor solución genética:")
+    print(np.array(mejor_solucion))
+    print("Errores en esta solución:", calcular_errores(mejor_solucion))
+else:
+    print("No se encontraron configuraciones con 5 errores.")
