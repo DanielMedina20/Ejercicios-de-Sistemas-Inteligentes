@@ -1,0 +1,98 @@
+import random
+import math
+
+
+#Estas matrices representan las distancias entre ubicaciones (matriz_dist) y las interacciones 
+# entre edificios (matriz_inter). Cada posición (i, j) en matriz_dist indica la distancia entre la ubicación i y la ubicación j. De manera similar, cada posición (i, j) en 
+# matriz_inter indica la cantidad de interacciones entre el edificio i y el edificio j.
+
+# Matriz que representa las distancias entre diferentes ubicaciones
+matriz_dist = [
+    [0, 420, 380, 510],
+    [420, 0, 410, 250],
+    [380, 410, 0, 230],
+    [510, 250, 230, 0]
+]
+
+# Matriz que indica la cantidad de interacciones entre los edificios
+matriz_inter = [
+    [0, 70, 45, 25],
+    [70, 0, 35, 15],
+    [45, 35, 0, 20],
+    [25, 15, 20, 0]
+]
+
+# Función para evaluar el puntaje de una distribución: Esta función calcula el puntaje (o costo) 
+# de una distribución de ubicaciones. El puntaje se calcula 
+# sumando el producto de las distancias e interacciones para cada par de ubicaciones.
+def evaluar_puntaje(ubicaciones, distancias, interacciones):
+    puntaje = 0
+    num_elementos = len(ubicaciones)
+    for x in range(num_elementos):
+        for y in range(num_elementos):
+            origen = ubicaciones[x]
+            destino = ubicaciones[y]
+            puntaje += distancias[x][y] * interacciones[origen][destino]
+    return puntaje
+
+# Función para determinar si una solución peor debe ser aceptada: Esta función decide si se debe a
+# ceptar una nueva configuración peor basada en la probabilidad de Boltzmann. Si la nueva configuración tiene una menor energía (mejor puntaje), se acepta siempre. 
+# Si no, se acepta con una probabilidad que disminuye con la temperatura.
+def aceptar_cambio(energia_vieja, energia_nueva, temp_actual):
+    if energia_nueva < energia_vieja:
+        return True
+    return random.random() < math.exp((energia_vieja - energia_nueva) / temp_actual)
+
+# Algoritmo de recocido simulado: Este es el núcleo del algoritmo de recocido simulado. Se inicia con una configuración aleatoria 
+# y se intenta mejorar esta configuración intercambiando aleatoriamente dos ubicaciones en cada iteración. 
+# La nueva configuración se acepta o rechaza basada en la función aceptar_cambio. La temperatura se reduce en cada iteración para disminuir
+#  la probabilidad de aceptar configuraciones peores con el tiempo.
+def simular_recocido(temp_inicial, tasa_reduccion, max_intentos):
+    # Comenzamos con una disposición inicial aleatoria
+    configuracion_actual = random.sample(range(4), 4)
+    mejor_configuracion = configuracion_actual[:]
+    temperatura = temp_inicial
+
+    for _ in range(max_intentos):
+        # Generamos una nueva disposición intercambiando dos ubicaciones al azar
+        nueva_configuracion = configuracion_actual[:]
+        pos1, pos2 = random.sample(range(4), 2)
+        nueva_configuracion[pos1], nueva_configuracion[pos2] = nueva_configuracion[pos2], nueva_configuracion[pos1]
+
+        # Calculamos la energía (costo) de las configuraciones actual y nueva
+        energia_actual = evaluar_puntaje(configuracion_actual, matriz_dist, matriz_inter)
+        energia_nueva = evaluar_puntaje(nueva_configuracion, matriz_dist, matriz_inter)
+
+        # Decidimos si aceptamos la nueva configuración
+        if aceptar_cambio(energia_actual, energia_nueva, temperatura):
+            configuracion_actual = nueva_configuracion
+
+        # Actualizamos la mejor configuración si es necesario
+        if evaluar_puntaje(configuracion_actual, matriz_dist, matriz_inter) < evaluar_puntaje(mejor_configuracion, matriz_dist, matriz_inter):
+            mejor_configuracion = configuracion_actual[:]
+
+        # Reducimos la temperatura
+        temperatura *= tasa_reduccion
+
+    return mejor_configuracion, evaluar_puntaje(mejor_configuracion, matriz_dist, matriz_inter)
+
+# Finalmente, se muestran los resultados. Aquí se asignan nombres legibles a las ubicaciones y se 
+# imprime la mejor asignación encontrada y su costo mínimo asociado
+
+
+# Parámetros del algoritmo
+temp_inicial = 1200
+tasa_reduccion = 0.92
+max_intentos = 15000
+
+# Ejecutamos la simulación
+mejor_ubicacion, costo_total_minimo = simular_recocido(temp_inicial, tasa_reduccion, max_intentos)
+
+# Nombres de ubicaciones y edificios
+nombres_lugares = ["X", "Y", "Z", "W"]
+nombres_ubicaciones = ["u", "v", "w", "x"]
+asignacion_final = [nombres_ubicaciones[i] for i in mejor_ubicacion]
+
+# Mostramos los resultados
+print(f"La mejor asignación obtenida es: {asignacion_final}")
+print(f"El costo mínimo calculado es: {costo_total_minimo}")
