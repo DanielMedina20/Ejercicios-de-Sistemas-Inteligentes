@@ -1,11 +1,13 @@
 import random
 import math
 
-# Función para obtener la suma esperada de cada fila, columna o diagonal
+# Esta función calcula la suma esperada para cada fila, columna o diagonal 
+# en un cuadrado mágico de tamaño tamano usando la formula de la constante magica
 def suma_esperada(tamano):
     return tamano * (tamano**2 + 1) // 2
 
-# Función que evalúa un cuadrado: calcula las diferencias respecto a la suma esperada
+# Esta función evalúa una matriz cuadrada y devuelve una lista 
+# de las sumas de cada fila, columna y las dos diagonales
 def evaluar_cuadrado(matriz, tamano):
     suma_fila = [sum(fila) for fila in matriz]
     suma_columna = [sum(matriz[f][c] for f in range(tamano)) for c in range(tamano)]
@@ -20,19 +22,23 @@ def evaluar_cuadrado(matriz, tamano):
     
     return diferencias
 
-# Función para calcular el "error" o lo lejos que está la matriz de ser un cuadrado mágico
+# Esta función calcula el desajuste (o error) de una matriz con respecto a ser un cuadrado mágico. Compara las sumas obtenidas 
+# con la suma esperada (valor_objetivo) y suma las diferencias absolutas.
 def calcular_desajuste(matriz, tamano, valor_objetivo):
     diferencias = evaluar_cuadrado(matriz, tamano)
     return sum(abs(dif - valor_objetivo) for dif in diferencias)
 
-# Función de probabilidad modificada para aceptar o no una solución subóptima
+# Esta función decide si acepta un nuevo estado según el criterio del recocido simulado. Si el nuevo estado tiene menor "energía" (menor desajuste), siempre se acepta. Si no, se acepta con 
+# una probabilidad que depende de la diferencia de energía y la temperatura actual.
 def aceptar_cambio(energia_antigua, energia_nueva, temp):
     if energia_nueva < energia_antigua:
         return True
     prob = math.exp((energia_antigua - energia_nueva) / temp)
     return prob > random.random()
 
-# Función de recocido simulado para encontrar el cuadrado mágico
+#   Esta es la función principal que implementa el algoritmo de recocido simulado. Comienza con un cuadrado inicial aleatorio y 
+# busca mejorar iterativamente su estructura realizando intercambios aleatorios y evaluando si deben ser aceptados según la función de aceptación. 
+# La temperatura se reduce gradualmente según la `tasa_enfriamiento`.
 def simular_recocido(tamano, temp_inicial, tasa_enfriamiento, max_pasos):
     # Generar un cuadrado inicial de manera aleatoria
     estado_actual = list(range(1, tamano**2 + 1))
@@ -67,7 +73,8 @@ def simular_recocido(tamano, temp_inicial, tasa_enfriamiento, max_pasos):
 
     return mejor_estado, calcular_desajuste(mejor_estado, tamano, suma_objetivo)
 
-# Parámetros del problema
+# Parámetros del problema: Aquí se configuran los parámetros del problema (tamaño del cuadrado, temperatura inicial, tasa de enfriamiento y número máximo de pasos) y se ejecuta el algoritmo de recocido simulado. 
+# Finalmente, se imprime el cuadrado mágico encontrado y el desajuste final.
 tamano = 3  # Tamaño del cuadrado mágico (ej. 3x3)
 temp_inicial = 1200
 tasa_enfriamiento = 0.97
