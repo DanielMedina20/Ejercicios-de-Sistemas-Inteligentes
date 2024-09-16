@@ -1,0 +1,80 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Función alternativa basada en la función de Shubert en 1D: Esta función, c
+# ustom_shubert_1d, es una versión modificada de la función de Shubert en 1D. 
+# Toma un valor x y calcula la suma de los términos definidos en la lista de comprensión. Es una función no lineal con múltiples máximos y mínimos locales, 
+# lo que la hace interesante para la búsqueda de extremos locales.
+def custom_shubert_1d(x):
+    return sum([j * np.cos((j + 1) * x + j) for j in range(2, 7)])
+
+# Algoritmo de ascenso de colina para hallar extremos locales (máximos/mínimos)
+def hill_climbing_custom(start_point, delta, max_steps, find='max'):
+    position = start_point
+    value = custom_shubert_1d(position)
+
+    for step in range(max_steps):
+        # Vecinos adyacentes
+        if find == 'max':
+            nearby_points = [position + delta, position - delta]
+        else:
+            nearby_points = [position - delta, position + delta]
+
+        # Evaluar los puntos cercanos
+        nearby_values = [custom_shubert_1d(p) for p in nearby_points]
+
+        if find == 'max':
+            optimal_value = max(nearby_values)
+        else:
+            optimal_value = min(nearby_values)
+
+        optimal_index = nearby_values.index(optimal_value)
+
+        # Actualizar si encontramos un mejor valor
+        if (find == 'max' and optimal_value > value) or (find == 'min' and optimal_value < value):
+            position = nearby_points[optimal_index]
+            value = optimal_value
+        else:
+            break  # Finaliza si no hay mejoría
+
+    return position, value
+
+# Parámetros del algoritmo modificados
+start_range = np.linspace(-8, 8, 15)  # Puntos de partida diferentes
+delta = 0.02
+max_steps = 1200
+
+# Ejecutar el algoritmo Hill Climbing con puntos iniciales variados
+found_maxima = []
+found_minima = []
+
+for start in start_range:
+    # Buscar máximo local
+    max_pos, max_val = hill_climbing_custom(start, delta, max_steps, find='max')
+    found_maxima.append((max_pos, max_val))
+
+    # Buscar mínimo local
+    min_pos, min_val = hill_climbing_custom(start, delta, max_steps, find='min')
+    found_minima.append((min_pos, min_val))
+
+# Generar la gráfica de la función personalizada de Shubert
+x_vals = np.linspace(-8, 8, 1500)
+y_vals = custom_shubert_1d(x_vals)
+
+plt.figure(figsize=(10, 6))
+plt.plot(x_vals, y_vals, 'g', label='Función Custom Shubert')
+
+# Resaltar los máximos encontrados
+for max_pos, max_val in found_maxima:
+    plt.plot(max_pos, max_val, 'rs', markersize=6)
+
+# Resaltar los mínimos encontrados
+for min_pos, min_val in found_minima:
+    plt.plot(min_pos, min_val, 'bs', markersize=6)
+
+plt.title('Función Custom Shubert con Extremos Locales - Hill Climbing Modificado')
+plt.xlabel('x')
+plt.ylabel('f(x)')
+plt.grid(True)
+plt.legend()
+plt.show()
