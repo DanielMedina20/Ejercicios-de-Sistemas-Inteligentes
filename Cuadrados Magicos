@@ -1,0 +1,84 @@
+import random
+import math
+
+# Función para obtener la suma esperada de cada fila, columna o diagonal
+def suma_esperada(tamano):
+    return tamano * (tamano**2 + 1) // 2
+
+# Función que evalúa un cuadrado: calcula las diferencias respecto a la suma esperada
+def evaluar_cuadrado(matriz, tamano):
+    suma_fila = [sum(fila) for fila in matriz]
+    suma_columna = [sum(matriz[f][c] for f in range(tamano)) for c in range(tamano)]
+    suma_diag_principal = sum(matriz[i][i] for i in range(tamano))
+    suma_diag_secundaria = sum(matriz[i][tamano - i - 1] for i in range(tamano))
+    
+    diferencias = []
+    diferencias.extend(suma_fila)
+    diferencias.extend(suma_columna)
+    diferencias.append(suma_diag_principal)
+    diferencias.append(suma_diag_secundaria)
+    
+    return diferencias
+
+# Función para calcular el "error" o lo lejos que está la matriz de ser un cuadrado mágico
+def calcular_desajuste(matriz, tamano, valor_objetivo):
+    diferencias = evaluar_cuadrado(matriz, tamano)
+    return sum(abs(dif - valor_objetivo) for dif in diferencias)
+
+# Función de probabilidad modificada para aceptar o no una solución subóptima
+def aceptar_cambio(energia_antigua, energia_nueva, temp):
+    if energia_nueva < energia_antigua:
+        return True
+    prob = math.exp((energia_antigua - energia_nueva) / temp)
+    return prob > random.random()
+
+# Función de recocido simulado para encontrar el cuadrado mágico
+def simular_recocido(tamano, temp_inicial, tasa_enfriamiento, max_pasos):
+    # Generar un cuadrado inicial de manera aleatoria
+    estado_actual = list(range(1, tamano**2 + 1))
+    random.shuffle(estado_actual)
+    estado_actual = [estado_actual[i * tamano:(i + 1) * tamano] for i in range(tamano)]
+
+    mejor_estado = [fila[:] for fila in estado_actual]
+    suma_objetivo = suma_esperada(tamano)
+    temperatura = temp_inicial
+
+    for _ in range(max_pasos):
+        # Crear una copia del estado actual y hacer un intercambio aleatorio
+        nuevo_estado = [fila[:] for fila in estado_actual]
+        fila1, col1 = random.randint(0, tamano - 1), random.randint(0, tamano - 1)
+        fila2, col2 = random.randint(0, tamano - 1), random.randint(0, tamano - 1)
+        nuevo_estado[fila1][col1], nuevo_estado[fila2][col2] = nuevo_estado[fila2][col2], nuevo_estado[fila1][col1]
+
+        # Calcular el desajuste (energía) de ambas soluciones
+        energia_antigua = calcular_desajuste(estado_actual, tamano, suma_objetivo)
+        energia_nueva = calcular_desajuste(nuevo_estado, tamano, suma_objetivo)
+
+        # Decidir si se acepta el nuevo estado
+        if aceptar_cambio(energia_antigua, energia_nueva, temperatura):
+            estado_actual = nuevo_estado
+
+        # Actualizar el mejor estado si la nueva solución es mejor
+        if energia_nueva < calcular_desajuste(mejor_estado, tamano, suma_objetivo):
+            mejor_estado = nuevo_estado
+
+        # Disminuir la temperatura
+        temperatura *= tasa_enfriamiento
+
+    return mejor_estado, calcular_desajuste(mejor_estado, tamano, suma_objetivo)
+
+# Parámetros del problema
+tamano = 3  # Tamaño del cuadrado mágico (ej. 3x3)
+temp_inicial = 1200
+tasa_enfriamiento = 0.97
+max_pasos = 8000
+
+# Ejecutar el recocido simulado para encontrar el cuadrado mágico
+cuadrado_final, error_final = simular_recocido(tamano, temp_inicial, tasa_enfriamiento, max_pasos)
+
+# Mostrar el resultado
+print("Cuadrado mágico encontrado:")
+for fila in cuadrado_final:
+    print(fila)
+print(f"Desajuste final: {error_final}")
+
